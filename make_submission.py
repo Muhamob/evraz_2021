@@ -1,13 +1,11 @@
 from datetime import datetime
 
-import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 
 from evraz.features import DBFeatureExtractor
-from evraz.metrics import metric, sklearn_scorer
+from evraz.metrics import sklearn_scorer
 from evraz.model import BaselineModel
 from evraz.settings import Connection
-
 
 if __name__ == "__main__":
     # Establish connection
