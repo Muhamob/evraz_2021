@@ -20,7 +20,12 @@ def main():
     cv = KFold(n_splits=5, random_state=42, shuffle=True)
     # train_df, val_df = train_test_split(df, shuffle=True, test_size=0.2, random_state=42)
 
-    model = LightAutoMLModel()
+    model = LightAutoMLModel(automl_params={
+        'timeout': 60,
+        'general_params': {
+            'use_algos': [['cb', 'cb_tuned']]
+        }
+    })
 
     print(
         cross_val_score(

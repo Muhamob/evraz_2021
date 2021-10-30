@@ -8,7 +8,6 @@ from lightautoml.tasks import Task
 
 from evraz.metrics import metric
 
-
 base_parameters = {
     'random_state': 42,
     'eval_metric': 'MAE',
@@ -22,6 +21,7 @@ class BaselineModel(RegressorMixin, BaseEstimator):
 
     Простейшая модель, которая использует CatBoost регрессора для каждой из двух переменной
     """
+
     def __init__(self, model_params: dict):
         self.model_params = model_params
         self.model_params.update(base_parameters)
@@ -34,7 +34,6 @@ class BaselineModel(RegressorMixin, BaseEstimator):
             y: pd.DataFrame,
             eval_set: Optional[Sequence[Tuple[pd.DataFrame, pd.DataFrame]]] = None,
             **kwargs):
-
         self.model_t.fit(X, y['TST'],
                          eval_set=[(features, target['TST']) for features, target in eval_set],
                          **kwargs)
@@ -60,29 +59,23 @@ class BaselineModel(RegressorMixin, BaseEstimator):
 
 
 class LightAutoMLModel(RegressorMixin, BaseEstimator):
-    def __init__(self, **automl_params):
+    def __init__(self, automl_params, drop_columns=None):
         self.automl_params = automl_params
-
-        algos = [['cb', 'cb_tuned']]
 
         self.model_t = TabularAutoML(
             task=Task('reg', loss='mse'),
             cpu_limit=4,
             memory_limit=5,
-            timeout=60 * 5,
-            general_params={
-                'use_algos': algos
-            }
+            **self.automl_params
         )
         self.model_c = TabularAutoML(
             task=Task('reg', loss='mse'),
             cpu_limit=4,
             memory_limit=5,
-            timeout=60 * 5,
-            general_params={
-                'use_algos': algos
-            }
+            **self.automl_params
         )
+
+        self.drop_columns = [] if drop_columns is None else drop_columns
 
     def fit(self, X, y):
         df = pd.concat([X, y], axis=1)

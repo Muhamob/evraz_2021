@@ -36,6 +36,7 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
 )
 select * from static_features
 left join chronom_features using("NPLV")
+where static_features."NPLV" != 511135
     """
 
     def __init__(self, conn: Connection):
