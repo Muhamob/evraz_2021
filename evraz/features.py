@@ -137,43 +137,43 @@ class AllFeaturesExtractor(DBFeatureExtractor):
     select "NPLV",
            -- мин, среднее, макс, откл
            -- объём
-           min("V") min_V,
-           max("V") max_V,
+           -- min("V") min_V,
+           -- max("V") max_V,
            avg("V") avg_V,
            stddev("V") srd_V,
            -- температура
-           min("T") min_T,
-           max("T") max_T,
+           -- min("T") min_T,
+           -- max("T") max_T,
            avg("T") avg_T,
            stddev("T") srd_T,
            -- AR
-           min("AR") min_AR,
-           max("AR") max_AR,
+           -- min("AR") min_AR,
+           -- max("AR") max_AR,
            avg("AR") avg_AR,
            stddev("AR") srd_AR,
            -- CO
-           min("CO") min_CO,
-           max("CO") max_CO,
+           -- min("CO") min_CO,
+           -- max("CO") max_CO,
            avg("CO") avg_CO,
            stddev("CO") srd_CO,
            -- CO2
-           min("CO2") min_CO2,
-           max("CO2") max_CO2,
+           -- min("CO2") min_CO2,
+           -- max("CO2") max_CO2,
            avg("CO2") avg_CO2,
            stddev("CO2") srd_CO2,
            -- H2
-           min("H2") min_H2,
-           max("H2") max_H2,
+           -- min("H2") min_H2,
+           -- max("H2") max_H2,
            avg("H2") avg_H2,
            stddev("H2") srd_H2,
            -- O2
-           min("O2") min_O2,
-           max("O2") max_O2,
+           -- min("O2") min_O2,
+           -- max("O2") max_O2,
            avg("O2") avg_O2,
            stddev("O2") srd_O2,
            -- N2
-           min("N2") min_N2,
-           max("N2") max_N2,
+           -- min("N2") min_N2,
+           -- max("N2") max_N2,
            avg("N2") avg_N2,
            stddev("N2") srd_N2
         from gas_{mode} gas
