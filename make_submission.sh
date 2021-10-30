@@ -1,2 +1,2 @@
 PYTHONPATH=. python make_submission.py
-git archive --format=zip HEAD > submit.zip
+git archive -v --format=zip HEAD > submit.zip

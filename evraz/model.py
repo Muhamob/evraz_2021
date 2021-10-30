@@ -3,6 +3,8 @@ from typing import Tuple, Optional, Sequence
 from sklearn.base import BaseEstimator, RegressorMixin
 from catboost import CatBoostRegressor
 import pandas as pd
+from lightautoml.automl.presets.tabular_presets import TabularAutoML
+from lightautoml.tasks import Task
 
 from evraz.metrics import metric
 
@@ -55,3 +57,45 @@ class BaselineModel(RegressorMixin, BaseEstimator):
         return {
             'business': metric(y, y_pred)
         }
+
+
+class LightAutoMLModel(RegressorMixin, BaseEstimator):
+    def __init__(self, **automl_params):
+        self.automl_params = automl_params
+
+        self.model_t = TabularAutoML(
+            task=Task('reg', loss='mse'),
+            cpu_limit=4,
+            memory_limit=5,
+            timeout=60,
+            general_params={
+                'use_algos': [['cb_tuned']]
+            }
+        )
+        self.model_c = TabularAutoML(
+            task=Task('reg', loss='mse'),
+            cpu_limit=4,
+            memory_limit=5,
+            timeout=60,
+            general_params={
+                'use_algos': [['cb_tuned']]
+            }
+        )
+
+    def fit(self, X, y):
+        df = pd.concat([X, y], axis=1)
+        print("Start fitting TST model")
+        self.model_t.fit_predict(df, roles={'target': 'TST', 'drop': 'C'}, verbose=1)
+        print("Start fitting C model")
+        self.model_c.fit_predict(df, roles={'target': 'C', 'drop': 'TST'}, verbose=1)
+
+        return self
+
+    def predict(self, X):
+        t = self.model_t.predict(X).data[:, 0]
+        c = self.model_c.predict(X).data[:, 0]
+
+        return pd.DataFrame.from_dict({
+            'TST': t,
+            'C': c
+        })
