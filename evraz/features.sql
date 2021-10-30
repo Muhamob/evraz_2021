@@ -27,6 +27,10 @@ from target_train target
          left join chugun_train chugun using ("NPLV");
 
 -- признаки из таблицы chronom
+select * from static_features
+left join chronom_features using("NPLV")
+left join sip_features using("NPLV")
+where static_features."NPLV" != 511135
 select target."NPLV",
        sum(coalesce(chronom."O2", 0))                  "sum_O2",
        sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
@@ -80,7 +84,8 @@ with chronom_features as (
          from target_train target
                   left join plavki_train plavki using ("NPLV")
                   left join chugun_train chugun using ("NPLV")
-), sip_features as (
+), grouped_features as (
+-- признаки, которые можно вытазить  использованием группировки
 select "NPLV",
        -- кол-во, сумма, среднее, отклонение, скошенность засыпанного Уголь ТО
        count("VSSYP") filter (where "NMSYP" = 'Уголь ТО') ugol_cnt,
@@ -105,6 +110,27 @@ select "NPLV",
 from sip_train sip
 -- from sip_test sip
 group by "NPLV"
+), numbered as (
+-- проставление порядкого номера процессов внутри одной плавки
+    select *,
+           row_number() over (partition by "NPLV" order by "DAT_OTD") rank,
+           row_number() over (partition by "NPLV" order by "DAT_OTD" desc) rank_inv
+    from sip_train sip
+), sip_features as (
+-- объединение признаков сыпучих
+    select gp.*,
+           -- первое название сыпучих
+           first_n."NMSYP" first_sip,
+           -- последнее название
+           last_n."NMSYP" lasts_sip
+    from grouped_features gp
+    left join numbered first_n using("NPLV")
+    left join numbered last_n using("NPLV")
+    where 1=1
+    -- первая строка
+    and first_n.rank = 1
+    -- последняя
+    and last_n.rank_inv = 1
 )
 select * from static_features
 left join chronom_features using("NPLV")

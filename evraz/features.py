@@ -33,7 +33,7 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
          from {target} target
                   left join plavki_{mode} plavki using ("NPLV")
                   left join chugun_{mode} chugun using ("NPLV")
-), sip_features as (
+), grouped_features as (
     select "NPLV",
            -- кол-во, сумма, среднее, отклонение, скошенность засыпанного Уголь ТО
            count("VSSYP") filter (where "NMSYP" = 'Уголь ТО') ugol_cnt,
@@ -58,6 +58,27 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
     from sip_{mode} sip
     -- from sip_test sip
     group by "NPLV"
+), numbered as (
+-- проставление порядкого номера процессов внутри одной плавки
+    select *,
+           row_number() over (partition by "NPLV" order by "DAT_OTD") rank,
+           row_number() over (partition by "NPLV" order by "DAT_OTD" desc) rank_inv
+    from sip_{mode} sip
+), sip_features as (
+-- объединение признаков сыпучих
+    select gp.*,
+           -- первое название сыпучих
+           first_n."NMSYP" first_sip,
+           -- последнее название
+           last_n."NMSYP" last_sip
+    from grouped_features gp
+    left join numbered first_n using("NPLV")
+    left join numbered last_n using("NPLV")
+    where 1=1
+    -- первая строка
+    and first_n.rank = 1
+    -- последняя
+    and last_n.rank_inv = 1
 )
 select * from static_features
 left join chronom_features using("NPLV")
