@@ -110,6 +110,7 @@ class StaticFeatures(DBFeatureExtractor):
     from {target} target
           left join plavki_{mode} plavki using ("NPLV")
           left join chugun_{mode} chugun using ("NPLV")
+    {cond}
     """
 
     def transform(self, X=None, mode: str = 'train'):
@@ -119,27 +120,42 @@ class StaticFeatures(DBFeatureExtractor):
 class ChronomRawFeatures(DBFeatureExtractor):
     query_template = """
     select target."NPLV",
-           sum(coalesce(chronom."O2", 0))                                   "sum_O2",
-           coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
-           filter (where chronom."NOP" = 'Нагрев лома'), 0)                  as lom_nagrev_total_minutes,
-           -- наличие торкретирования
-           count(*) filter (where chronom."NOP" = 'Полусухое торкрет.')  as torcr_count,
-           -- общее время слива шлака
-           coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
-           filter ( where chronom."NOP" = 'Слив шлака'), 0)                  as sliv_shlaka_total_sec,
-           -- проводилось ли наведение гарнисажа
-           count(*) filter (where chronom."NOP" = 'Наведение гарнисажа') as garnisazh_cnt,
-           -- общее время обрыва горловины
-           coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
-           filter (where chronom."NOP" = 'Обрыв горловины'), 0)              as obr_gorl_total_sec,
-           -- общее время Отсутствие O2
-           coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
-           filter (where chronom."NOP" = 'Отсутствие O2'), 0)               as ots_02_total_sec
+       --  количество O2 использованного в процессе
+       sum(coalesce(chronom."O2", 0)) filter (where chronom."NOP" != 'Додувка на C') "sum_O2",
+       -- общее время нагрева лома
+       coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" = 'Нагрев лома'), 0)          as         lom_nagrev_total_minutes,
+       -- наличие торкретирования
+       count(*) filter (where chronom."NOP" = 'Полусухое торкрет.')       as         torcr_count,
+       -- общее время слива шлака
+       coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
+                filter ( where chronom."NOP" = 'Слив шлака'), 0)          as         sliv_shlaka_total_sec,
+       -- проводилось ли наведение гарнисажа
+       count(*) filter (where chronom."NOP" = 'Наведение гарнисажа')      as         garnisazh_cnt,
+       -- общее время обрыва горловины
+       coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" = 'Обрыв горловины'), 0)      as         obr_gorl_total_sec,
+       -- общее время Отсутствие O2
+       coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" = 'Отсутствие O2'), 0)        as         ots_02_total_sec,
+       -- общее время отсутствия чугуна
+       coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" = 'Отсутствие чугуна'), 0)    as         ots_chugun_total_sec,
+       -- время простоя из-за неисправностей
+       coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" like 'Неиспр.%'), 0)          as         neispr_total_min,
+       -- время ожидания чего-то (Ожидание)
+       coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" like 'Ожидание%'), 0)         as         ozhidanie_total_min,
+       -- время замера положения фурм (Замер положения фурм)
+       coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
+                filter (where chronom."NOP" = 'Замер положения фурм'), 0) as         zamer_furm_total_min
     from {target} target
              left join chronom_{mode} chronom using ("NPLV")
              left join plavki_{mode} plavki using ("NPLV")
     where chronom."VR_KON" < plavki."plavka_VR_KON"
     group by target."NPLV"
+    {cond}
     """
 
 
