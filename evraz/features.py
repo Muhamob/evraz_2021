@@ -302,9 +302,9 @@ class GasProcessFeatures(DBFeatureExtractor):
        stddev(gas."T") filter ( where chronom."NOP" = 'Продувка' ) std_t_produvka,
        -- минимальное значение температуры во время продувки
        min(gas."T") filter ( where chronom."NOP" = 'Продувка' ) min_t_produvka,
-       -- 10% персентиль температуры во время продувки
+       -- 10%% персентиль температуры во время продувки
        percentile_cont(0.1) within group ( order by gas."T" ) filter ( where chronom."NOP" = 'Продувка' ) percentile_10_produvka,
-       -- 90% персентиль температуры во время продувки
+       -- 90%% персентиль температуры во время продувки
        percentile_cont(0.9) within group ( order by gas."T" ) filter ( where chronom."NOP" = 'Продувка' ) percentile_90_produvka
     from gas_{mode} gas
     left join chronom_{mode} chronom
