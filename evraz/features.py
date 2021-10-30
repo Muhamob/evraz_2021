@@ -75,7 +75,7 @@ class AllFeaturesExtractor(DBFeatureExtractor):
             static_fe=StaticFeatures(conn),
             chronom_fe=ChronomRawFeatures(conn),
             sip_fe=SipFeatures(conn),
-            gas_fe=GasRawFeatures(conn),
+            # gas_fe=GasRawFeatures(conn),
             gas_proc_fe=GasProcessFeatures(conn)
         )
 
