@@ -6,10 +6,36 @@ from evraz.settings import Connection
 
 class DBFeatureExtractor(TransformerMixin, BaseEstimator):
     query_template = """
-    select * from {target} target
-    left join plavki_{mode} plavki using("NPLV")
-    left join chugun_{mode} chugun using("NPLV")
-    {cond}
+    with chronom_features as (
+    select target."NPLV",
+           sum(coalesce(chronom."O2", 0))                                   "sum_O2",
+           coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
+           filter (where chronom."NOP" = 'Нагрев лома'), 0)                  as lom_nagrev_total_minutes,
+           -- наличие торкретирования
+           count(*) filter (where chronom."NOP" = 'Полусухое торкрет.')  as torcr_count,
+           -- общее время слива шлака
+           coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
+           filter ( where chronom."NOP" = 'Слив шлака'), 0)                  as sliv_shlaka_total_sec,
+           -- проводилось ли наведение гарнисажа
+           count(*) filter (where chronom."NOP" = 'Наведение гарнисажа') as garnisazh_cnt,
+           -- общее время обрыва горловины
+           coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
+           filter (where chronom."NOP" = 'Обрыв горловины'), 0)              as obr_gorl_total_sec,
+           -- общее время Отсутствие O2
+           coalesce(sum(datediff_seconds(chronom."VR_KON", chronom."VR_NACH"))
+           filter (where chronom."NOP" = 'Отсутствие O2'), 0)               as ots_02_total_sec
+    from {target} target
+             left join chronom_{mode} chronom using ("NPLV")
+    group by target."NPLV"
+),
+     static_features as (
+         select *
+         from {target} target
+                  left join plavki_{mode} plavki using ("NPLV")
+                  left join chugun_{mode} chugun using ("NPLV")
+)
+select * from static_features
+left join chronom_features using("NPLV")
     """
 
     def __init__(self, conn: Connection):
@@ -21,6 +47,7 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
         self.float_columns = None
         self.cat_columns = None
         self.feature_columns = None
+        self.int_columns = None
 
     def _get_df(self, mode: str, cond: str = "") -> pd.DataFrame:
         if mode == 'train':
@@ -36,7 +63,6 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
             mode=mode,
             cond=cond
         )
-        print(query)
 
         return self.conn.read_query(query)
 
@@ -49,9 +75,11 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
 
         self.time_columns = df.columns[df.dtypes == 'datetime64[ns]'].difference(self.target_columns + [self.id_column]).tolist()
         self.float_columns = df.columns[df.dtypes == 'float64'].difference(self.target_columns + [self.id_column]).tolist()
+        self.int_columns = df.columns[df.dtypes == 'int64'].difference(self.target_columns + [self.id_column]).tolist()
         self.cat_columns = df.columns[df.dtypes == 'object'].difference(self.target_columns + [self.id_column]).tolist()
 
-        self.feature_columns = self.float_columns + self.cat_columns
+        self.feature_columns = self.float_columns + self.int_columns + self.cat_columns
+        print("Feature columns", self.feature_columns)
 
         return self
 

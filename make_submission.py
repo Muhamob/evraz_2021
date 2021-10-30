@@ -7,16 +7,18 @@ from evraz.metrics import sklearn_scorer, metric
 from evraz.model import BaselineModel, LightAutoMLModel
 from evraz.settings import Connection
 
-if __name__ == "__main__":
+
+def main():
     # Establish connection
     conn = Connection().open_conn().ping()
 
     # Extract features from db
     fe = DBFeatureExtractor(conn).fit()
     df = fe.transform(mode="train")
+    print("NUmber of feature columns:", len(fe.feature_columns))
 
     cv = KFold(n_splits=5, random_state=42, shuffle=True)
-    train_df, val_df = train_test_split(df, shuffle=True, test_size=0.2, random_state=42)
+    # train_df, val_df = train_test_split(df, shuffle=True, test_size=0.2, random_state=42)
 
     model = LightAutoMLModel()
 
@@ -49,3 +51,7 @@ if __name__ == "__main__":
 
     timestamp = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
     submission.to_csv(f"../data/submissions/{timestamp}.csv", index=False)
+
+
+if __name__ == "__main__":
+    main()
