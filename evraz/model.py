@@ -63,22 +63,24 @@ class LightAutoMLModel(RegressorMixin, BaseEstimator):
     def __init__(self, **automl_params):
         self.automl_params = automl_params
 
+        algos = [['cb', 'cb_tuned']]
+
         self.model_t = TabularAutoML(
             task=Task('reg', loss='mse'),
             cpu_limit=4,
             memory_limit=5,
-            timeout=60,
+            timeout=60 * 5,
             general_params={
-                'use_algos': [['cb_tuned']]
+                'use_algos': algos
             }
         )
         self.model_c = TabularAutoML(
             task=Task('reg', loss='mse'),
             cpu_limit=4,
             memory_limit=5,
-            timeout=60,
+            timeout=60 * 5,
             general_params={
-                'use_algos': [['cb_tuned']]
+                'use_algos': algos
             }
         )
 

@@ -47,6 +47,7 @@ def main():
         .astype({
             "NPLV": int
         })
+        .sort_values("NPLV")
     )
 
     timestamp = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
