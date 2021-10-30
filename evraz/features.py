@@ -5,6 +5,11 @@ from evraz.settings import Connection
 
 
 class DBFeatureExtractor(TransformerMixin, BaseEstimator):
+    """
+    Базовый класс для обработки запросов на извлечение признаков.
+
+    Для добавления новых признаков требуется всего определить поле query_template
+    """
     query_template = ""
 
     def __init__(self, conn: Connection):
@@ -19,11 +24,13 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
         self.int_columns = None
 
     def get_df(self, mode: str, cond: str = "") -> pd.DataFrame:
+        """
+        Метод для получения признака из 
+        """
         if mode == 'train':
             target = 'target_train'
         elif mode == 'test':
             target = 'sample_submission'
-            cond += '\norder by "tgt_NPLV"'
         else:
             raise TypeError(f"mode must be 'train' or 'test', got {mode}")
 
