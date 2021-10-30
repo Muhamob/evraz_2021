@@ -2,7 +2,7 @@ import os
 
 from sklearn.model_selection import KFold, cross_val_score
 
-from evraz.features import DBFeatureExtractor
+from evraz.features import AllFeaturesExtractor
 from evraz.metrics import sklearn_scorer
 from evraz.model import LightAutoMLModel
 from evraz.settings import Connection
@@ -13,7 +13,7 @@ def main():
     conn = Connection().open_conn().ping()
 
     # Extract features from db
-    fe = DBFeatureExtractor(conn).fit()
+    fe = AllFeaturesExtractor(conn).fit()
     df = fe.transform(mode="train")
     print("NUmber of feature columns:", len(fe.feature_columns))
 
