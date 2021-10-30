@@ -1,3 +1,24 @@
+-- разница во времени в минутах
+create or replace function datediff_minutes(end_date timestamp without time zone,
+                                            start_date timestamp without time zone) returns integer as
+$$
+begin
+    return (DATE_PART('day', end_date - start_date) * 24 + DATE_PART('hour', end_date - start_date)) * 60
+        + DATE_PART('minute', end_date - start_date);
+end;
+$$ language plpgsql;
+
+-- разница во времени в секундах
+create or replace function datediff_seconds(end_date timestamp without time zone,
+                                            start_date timestamp without time zone) returns integer as
+$$
+begin
+    return datediff_minutes(end_date, start_date) * 60
+    + date_part('second', end_date - start_date);
+end;
+$$ language plpgsql;
+
+-- удаление таблиц
 DROP TABLE chugun_train;
 DROP TABLE plavki_test;
 DROP TABLE sip_test;
@@ -15,7 +36,7 @@ DROP TABLE chugun_test;
 DROP TABLE lom_train;
 drop table sample_submission;
 
-
+-- таблицы созданные для данного соревнования
 select CONCAT('DROP TABLE ', TABLE_NAME,';')
 FROM INFORMATION_SCHEMA.TABLES
 WHERE 1=1
@@ -26,8 +47,7 @@ and (
 	table_name like '%_test'
 	)
 
-
-
+-- схемы таблицы (использовался csvsql из пакета csvkit)
 CREATE TABLE chronom_test (
 	a DECIMAL NOT NULL,
 	"NPLV" DECIMAL NOT NULL,

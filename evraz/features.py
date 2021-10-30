@@ -25,7 +25,7 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
 
     def get_df(self, mode: str, cond: str = "") -> pd.DataFrame:
         """
-        Метод для получения признака из 
+        Метод для получения датафрейма из query_template
         """
         if mode == 'train':
             target = 'target_train'
@@ -42,9 +42,9 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
         print(query)
         return self.conn.read_query(query)
 
-    def fit(self, X=None, y=None, **kwargs):
+    def fit(self, X=None, y: pd.DataFrame=None, **kwargs):
         """
-        Происходит инференс типов данных
+        Инференс типов данных
         """
 
         df = self.get_df("train", cond="limit 500")
@@ -76,6 +76,9 @@ class AllFeaturesExtractor(DBFeatureExtractor):
     """
 
     def __init__(self, conn):
+        """
+        Класс для сбора всех имеющихся признаков
+        """
         super().__init__(conn)
 
         self.feature_extractors = dict(
@@ -110,6 +113,9 @@ class AllFeaturesExtractor(DBFeatureExtractor):
 
 
 class StaticFeatures(DBFeatureExtractor):
+    """
+    Статические признаки изделия
+    """
     query_template = """
     select target."NPLV" "tgt_NPLV",
            plavki.*,
@@ -125,6 +131,9 @@ class StaticFeatures(DBFeatureExtractor):
 
 
 class ChronomRawFeatures(DBFeatureExtractor):
+    """
+    Признаки наличия некоторых операций и их длительностей
+    """
     query_template = """
     select target."NPLV",
        --  количество O2 использованного в процессе
@@ -167,6 +176,9 @@ class ChronomRawFeatures(DBFeatureExtractor):
 
 
 class SipFeatures(DBFeatureExtractor):
+    """
+    Признаки количества, средних, std используемых сыпучих материалов
+    """
     query_template = """
     with grouped_features as (
         select "NPLV",
@@ -224,6 +236,9 @@ class SipFeatures(DBFeatureExtractor):
 
 
 class GasRawFeatures(DBFeatureExtractor):
+    """
+    Простые аггрегаты колонок из таблицы gas
+    """
     query_template = """
     select "NPLV",
            -- мин, среднее, макс, откл
@@ -276,15 +291,21 @@ class GasRawFeatures(DBFeatureExtractor):
 
 
 class GasProcessFeatures(DBFeatureExtractor):
+    """
+    Аггрегаты состава газов при некоторых процессах
+    """
     query_template = """
     select gas."NPLV",
+       -- среднее значение температуры во время продувки
        avg(gas."T") filter ( where chronom."NOP" = 'Продувка' ) avg_t_produvka,
+       -- std температуры во время продувки
        stddev(gas."T") filter ( where chronom."NOP" = 'Продувка' ) std_t_produvka,
+       -- минимальное значение температуры во время продувки
        min(gas."T") filter ( where chronom."NOP" = 'Продувка' ) min_t_produvka,
+       -- 10% персентиль температуры во время продувки
        percentile_cont(0.1) within group ( order by gas."T" ) filter ( where chronom."NOP" = 'Продувка' ) percentile_10_produvka,
+       -- 90% персентиль температуры во время продувки
        percentile_cont(0.9) within group ( order by gas."T" ) filter ( where chronom."NOP" = 'Продувка' ) percentile_90_produvka
-    -- from gas_train gas
-    -- left join chronom_train chronom
     from gas_{mode} gas
     left join chronom_{mode} chronom
     on gas."NPLV" = chronom."NPLV"
