@@ -80,6 +80,33 @@ with chronom_features as (
          from target_train target
                   left join plavki_train plavki using ("NPLV")
                   left join chugun_train chugun using ("NPLV")
+), sip_features as (
+select "NPLV",
+       -- кол-во, сумма, среднее, отклонение, скошенность засыпанного Уголь ТО
+       count("VSSYP") filter (where "NMSYP" = 'Уголь ТО') ugol_cnt,
+       coalesce(sum("VSSYP") filter (where "NMSYP" = 'Уголь ТО'), 0) ugol_sum,
+       coalesce(avg("VSSYP") filter (where "NMSYP" = 'Уголь ТО'), 0) ugol_avg,
+       coalesce(stddev("VSSYP") filter (where "NMSYP" = 'Уголь ТО'), 0) ugol_std,
+       -- кол-во, сумма, среднее, отклонение, скошенность засыпанного ФЛЮМАГ
+       count("VSSYP") filter (where "NMSYP" = 'ФЛЮМАГ') flumag_cnt,
+       coalesce(sum("VSSYP") filter (where "NMSYP" = 'ФЛЮМАГ'), 0) flumag_sum,
+       coalesce(avg("VSSYP") filter (where "NMSYP" = 'ФЛЮМАГ'), 0) flumag_avg,
+       coalesce(stddev("VSSYP") filter (where "NMSYP" = 'ФЛЮМАГ'), 0) flumag_std,
+       -- кол-во, сумма, среднее, отклонение, скошенность засыпанного изв_ЦОИ
+       count("VSSYP") filter (where "NMSYP" = 'изв_ЦОИ') uzvcoi_cnt,
+       coalesce(sum("VSSYP") filter (where "NMSYP" = 'изв_ЦОИ'), 0) uzvcoi_sum,
+       coalesce(avg("VSSYP") filter (where "NMSYP" = 'изв_ЦОИ'), 0) uzvcoi_avg,
+       coalesce(stddev("VSSYP") filter (where "NMSYP" = 'изв_ЦОИ'), 0) uzvcoi_std,
+       -- кол-во, сумма, среднее, отклонение, скошенность засыпанного Флюс ФОМИ
+       count("VSSYP") filter (where "NMSYP" = 'Флюс ФОМИ') flusfomi_cnt,
+       coalesce(sum("VSSYP") filter (where "NMSYP" = 'Флюс ФОМИ'), 0) flusfomi_sum,
+       coalesce(avg("VSSYP") filter (where "NMSYP" = 'Флюс ФОМИ'), 0) flusfomi_avg,
+       coalesce(stddev("VSSYP") filter (where "NMSYP" = 'Флюс ФОМИ'), 0) flusfomi_std
+from sip_train sip
+-- from sip_test sip
+group by "NPLV"
 )
 select * from static_features
 left join chronom_features using("NPLV")
+left join sip_features using("NPLV")
+where static_features."NPLV" != 511135
