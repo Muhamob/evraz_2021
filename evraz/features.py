@@ -23,7 +23,7 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
             target = 'target_train'
         elif mode == 'test':
             target = 'sample_submission'
-            cond += '\norder by "NPLV"'
+            cond += '\norder by "tgt_NPLV"'
         else:
             raise TypeError(f"mode must be 'train' or 'test', got {mode}")
 
@@ -75,7 +75,7 @@ class AllFeaturesExtractor(DBFeatureExtractor):
             static_fe=StaticFeatures(conn),
             chronom_fe=ChronomRawFeatures(conn),
             sip_fe=SipFeatures(conn),
-            # gas_fe=GasRawFeatures(conn),
+            gas_fe=GasRawFeatures(conn),
             gas_proc_fe=GasProcessFeatures(conn)
         )
 
@@ -121,7 +121,7 @@ class ChronomRawFeatures(DBFeatureExtractor):
     query_template = """
     select target."NPLV",
        --  количество O2 использованного в процессе
-       sum(coalesce(chronom."O2", 0)) filter (where chronom."NOP" != 'Додувка на C') "sum_O2",
+       sum(coalesce(chronom."O2", 0)) "sum_O2",
        -- общее время нагрева лома
        coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
                 filter (where chronom."NOP" = 'Нагрев лома'), 0)          as         lom_nagrev_total_minutes,
