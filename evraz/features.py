@@ -137,6 +137,8 @@ class ChronomRawFeatures(DBFeatureExtractor):
            filter (where chronom."NOP" = 'Отсутствие O2'), 0)               as ots_02_total_sec
     from {target} target
              left join chronom_{mode} chronom using ("NPLV")
+             left join plavki_{mode} plavki using ("NPLV")
+    where chronom."VR_KON" < plavki."plavka_VR_KON"
     group by target."NPLV"
     """
 
@@ -166,14 +168,17 @@ class SipFeatures(DBFeatureExtractor):
                coalesce(avg("VSSYP") filter (where "NMSYP" = 'Флюс ФОМИ'), 0) flusfomi_avg,
                coalesce(stddev("VSSYP") filter (where "NMSYP" = 'Флюс ФОМИ'), 0) flusfomi_std
         from sip_{mode} sip
-        -- from sip_test sip
+        left join plavki_{mode} plavki using ("NPLV")
+        where sip."DAT_OTD" < plavki."plavka_VR_KON"
         group by "NPLV"
     ), numbered as (
     -- проставление порядкого номера процессов внутри одной плавки
-        select *,
+        select sip.*,
                row_number() over (partition by "NPLV" order by "DAT_OTD") rank,
                row_number() over (partition by "NPLV" order by "DAT_OTD" desc) rank_inv
         from sip_{mode} sip
+        left join plavki_{mode} plavki using ("NPLV")
+        where sip."DAT_OTD" < plavki."plavka_VR_KON"
     ), sip_features as (
     -- объединение признаков сыпучих
         select gp.*,
@@ -240,6 +245,8 @@ class GasRawFeatures(DBFeatureExtractor):
            avg("N2") avg_N2,
            stddev("N2") srd_N2
     from gas_{mode} gas
+    left join plavki_{mode} plavki using ("NPLV")
+        where gas."Time" < plavki."plavka_VR_KON"
     group by "NPLV"
     {cond}
     """
@@ -259,6 +266,9 @@ class GasProcessFeatures(DBFeatureExtractor):
     left join chronom_{mode} chronom
     on gas."NPLV" = chronom."NPLV"
     and gas."Time" between chronom."VR_NACH" and chronom."VR_KON"
-    group by 1
+    left join plavki_{mode} plavki 
+    on plavki."NPLV" = gas."NPLV"
+        where gas."Time" < plavki."plavka_VR_KON"
+    group by gas."NPLV"
     {cond}
     """
