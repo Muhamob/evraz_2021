@@ -32,7 +32,7 @@ class DBFeatureExtractor(TransformerMixin, BaseEstimator):
             mode=mode,
             cond=cond
         )
-
+        print(query)
         return self.conn.read_query(query)
 
     def fit(self, X=None, y=None, **kwargs):
@@ -143,10 +143,10 @@ class ChronomRawFeatures(DBFeatureExtractor):
                 filter (where chronom."NOP" = 'Отсутствие чугуна'), 0)    as         ots_chugun_total_sec,
        -- время простоя из-за неисправностей
        coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
-                filter (where chronom."NOP" like 'Неиспр.%'), 0)          as         neispr_total_min,
+                filter (where chronom."NOP" like 'Неиспр.%%'), 0)          as         neispr_total_min,
        -- время ожидания чего-то (Ожидание)
        coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
-                filter (where chronom."NOP" like 'Ожидание%'), 0)         as         ozhidanie_total_min,
+                filter (where chronom."NOP" like 'Ожидание%%'), 0)         as         ozhidanie_total_min,
        -- время замера положения фурм (Замер положения фурм)
        coalesce(sum(datediff_minutes(chronom."VR_KON", chronom."VR_NACH"))
                 filter (where chronom."NOP" = 'Замер положения фурм'), 0) as         zamer_furm_total_min

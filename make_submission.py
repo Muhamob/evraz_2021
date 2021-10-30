@@ -16,7 +16,7 @@ def main():
     fe = AllFeaturesExtractor(conn).fit()
     df = fe.transform(mode="train")
     print("NUmber of feature columns:", len(fe.feature_columns))
-
+    
     cv = KFold(n_splits=5, random_state=42, shuffle=True)
 
     model = LightAutoMLModel(automl_params={
