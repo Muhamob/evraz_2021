@@ -16,24 +16,25 @@ def main():
     fe = AllFeaturesExtractor(conn).fit()
     df = fe.transform(mode="train")
     print("NUmber of feature columns:", len(fe.feature_columns))
-    
+
     cv = KFold(n_splits=5, random_state=42, shuffle=True)
 
     model = LightAutoMLModel(automl_params={
-        'timeout': 60,
+        'timeout': 60 * 10,
         'general_params': {
-            'use_algos': [['cb', 'cb_tuned']]
+            'use_algos': [['cb_tuned']]
+        },
+        'selection_params': {
+            'mode': 2
         }
     })
 
-    print(
-        cross_val_score(
-            estimator=model,
-            X=df[fe.feature_columns],
-            y=df[fe.target_columns],
-            scoring=sklearn_scorer,
-            cv=cv
-        )
+    cv_score = cross_val_score(
+        estimator=model,
+        X=df[fe.feature_columns],
+        y=df[fe.target_columns],
+        scoring=sklearn_scorer,
+        cv=cv
     )
 
     final_model = model.fit(
@@ -56,6 +57,8 @@ def main():
 
     filename = os.environ.get("SUB_NAME")
     submission.to_csv(f"../data/submissions/{filename}.csv", index=False)
+
+    print("CV score:", cv_score)
 
 
 if __name__ == "__main__":
