@@ -8,23 +8,22 @@ from lightautoml.tasks import Task
 
 from evraz.metrics import metric
 
-base_parameters = {
-    'random_state': 42,
-    'eval_metric': 'MAE',
-    'early_stopping_rounds': 10,
-    'iterations': 1000
-}
-
 
 class BaselineModel(RegressorMixin, BaseEstimator):
     """Модель регрессии сразу двух параметров
 
     Простейшая модель, которая использует CatBoost регрессора для каждой из двух переменной
     """
+    base_parameters = {
+        'random_state': 42,
+        'eval_metric': 'MAE',
+        'early_stopping_rounds': 10,
+        'iterations': 1000
+    }
 
     def __init__(self, model_params: dict):
         self.model_params = model_params
-        self.model_params.update(base_parameters)
+        self.model_params.update(self.base_parameters)
 
         self.model_t = CatBoostRegressor(**self.model_params)
         self.model_c = CatBoostRegressor(**self.model_params)
@@ -59,7 +58,10 @@ class BaselineModel(RegressorMixin, BaseEstimator):
 
 
 class LightAutoMLModel(RegressorMixin, BaseEstimator):
-    def __init__(self, automl_params, drop_columns=None):
+    """
+    Обертка над двумя моделями LightAutoML
+    """
+    def __init__(self, automl_params: dict, verbose: int = 1):
         self.automl_params = automl_params
 
         self.model_t = TabularAutoML(
@@ -75,18 +77,18 @@ class LightAutoMLModel(RegressorMixin, BaseEstimator):
             **self.automl_params
         )
 
-        self.drop_columns = [] if drop_columns is None else drop_columns
+        self.verbose = verbose
 
-    def fit(self, X, y):
+    def fit(self, X: pd.DataFrame, y: pd.DataFrame):
         df = pd.concat([X, y], axis=1)
         print("Start fitting TST model")
-        self.model_t.fit_predict(df, roles={'target': 'TST', 'drop': 'C'}, verbose=1)
+        self.model_t.fit_predict(df, roles={'target': 'TST', 'drop': 'C'}, verbose=self.verbose)
         print("Start fitting C model")
-        self.model_c.fit_predict(df, roles={'target': 'C', 'drop': 'TST'}, verbose=1)
+        self.model_c.fit_predict(df, roles={'target': 'C', 'drop': 'TST'}, verbose=self.verbose)
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: pd.DataFrame) -> pd.DataFrame:
         t = self.model_t.predict(X).data[:, 0]
         c = self.model_c.predict(X).data[:, 0]
 

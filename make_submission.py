@@ -14,6 +14,7 @@ def main():
 
     # Extract features from db
     fe = AllFeaturesExtractor(conn).fit()
+
     df = fe.transform(mode="train")
     print("NUmber of feature columns:", len(fe.feature_columns))
 
